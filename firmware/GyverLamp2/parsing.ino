@@ -54,7 +54,7 @@ void parsing() {
                 delay(100);
                 FastLED.clear();
                 FastLED.show();
-                ESPhttpUpdate.update(OTAhost);
+                //ESPhttpUpdate.update(OTAhost);
               } break;
             case 13:                                        // выключить через
               if (data[3] == 0) turnoffTmr.stop();

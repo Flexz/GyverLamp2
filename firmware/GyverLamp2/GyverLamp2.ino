@@ -4,13 +4,15 @@
 
 // ---------- Настройки -----------
 #define GL_KEY "GL"         // ключ сети
+#define TARGET_ESP32
+//#define TARGET_ESP8266
 
 // ------------ Кнопка -------------
-#define BTN_PIN 4           // пин кнопки GPIO4 (D2). Или 0 для схемы с ESP-01 !!
+#define BTN_PIN 0           // пин кнопки GPIO4 (D2). Или 0 для схемы с ESP-01 !!
 #define USE_BTN 1           // 1 использовать кнопку, 0 нет
 
 // ------------ Лента -------------
-#define STRIP_PIN 2         // пин ленты GPIO2 (D4)
+#define STRIP_PIN 23         // пин ленты GPIO2 (D4)
 #define MAX_LEDS 512        // макс. светодиодов
 #define STRIP_CHIP WS2812   // чип ленты
 #define STRIP_COLOR GRB     // порядок цветов в ленте
@@ -28,10 +30,10 @@ const char AP_NameChar[] = "GyverLamp2";
 const char WiFiPassword[] = "12345678";
 
 // ------------ Прочее -------------
-#define MIC_VCC D6          // питание микрофона
-#define PHOT_VCC D5         // питание фоторезистора
+#define MIC_VCC D3          // питание микрофона
+#define PHOT_VCC D2         // питание фоторезистора
 #define EE_TOUT 30000       // таймаут сохранения епром после изменения, мс
-//#define DEBUG_SERIAL        // закомментируй чтобы выключить отладку (скорость 115200)
+#define DEBUG_SERIAL        // закомментируй чтобы выключить отладку (скорость 115200)
 #define EE_KEY 42           // ключ сброса WiFi (измени для сброса всех настроек)
 #define NTP_UPD_PRD 5       // период обновления времени с NTP сервера, минут
 
@@ -47,18 +49,18 @@ const char WiFiPassword[] = "12345678";
 #include "VolAnalyzer.h"  // анализатор громкости
 #include "FFT_C.h"        // фурье
 #include <FastLED.h>      // лента
-#include <ESP8266WiFi.h>  // базовая либа есп
 #include <WiFiUdp.h>      // общение по UDP
 #include <EEPROM.h>       // епром
-#include "ESP8266httpUpdate.h"  // OTA
+
+#include "platforms.h"
 
 // ------------------- ДАТА --------------------
 Config cfg;
 Preset preset[MAX_PRESETS];
 Dawn dawn;
 WiFiServer server(80);
-WiFiUDP Udp;
-WiFiUDP ntpUDP;
+WiFiUDPPort Udp;
+WiFiUDPPort ntpUDP;
 NTPClient ntp(ntpUDP);
 CRGB leds[MAX_LEDS];
 Time now;
