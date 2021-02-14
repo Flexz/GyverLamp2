@@ -4,6 +4,8 @@
 #ifdef TARGET_ESP32
 
 // ---------- ESP32 port by Flexz -----------
+#define FASTLED_ESP32_I2S
+
 #define D6 6 //На ESP32 недоступен (занят под свои нужды платы)
 #define D5 5 //На ESP32 недоступен (занят под свои нужды платы)
 #define D4 4

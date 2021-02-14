@@ -1,5 +1,5 @@
 void effectsRoutine() {
-  static timerMillis effTmr(30, true);
+  static timerMillis effTmr(20, true);
   static byte prevEff = 255;
   if (cfg.state && effTmr.isReady()) {
     int thisLength = getLength();
@@ -149,12 +149,96 @@ void effectsRoutine() {
         }
         break;
     }
-
-    // выводим нажатия кнопки
-    if (btnClicks > 0) fill_solid(leds, btnClicks, CRGB::White);
-    if (brTicks > 0) fill_solid(leds, brTicks, CRGB::Cyan);
+    
+    drawOverlay();
     FastLED.show();
   }
+}
+
+uint8_t getFontIndex(uint8_t asciiCode)
+{
+  asciiCode = asciiCode - '0' + 16;                         // перевод код символа из таблицы ASCII в номер согласно нумерации массива
+
+  if (asciiCode <= 90)                                      // печатаемые символы и английские буквы
+  {
+    return asciiCode;
+  }
+  else if (asciiCode >= 112 && asciiCode <= 159)
+  {
+    return asciiCode - 17;
+  }
+  else if (asciiCode >= 96 && asciiCode <= 111)
+  {
+    return asciiCode + 47;
+  }
+
+  return 0;
+}
+
+void drawChar(int x, int y, char sym)
+{
+  const uint8_t *syms = fontHEX[getFontIndex(sym)];
+  for(int c = 0; c < 5; c++)
+  {
+    for(int r = 0; r < 8; r++)
+    {
+      if(syms[c] & (1 << r))
+      {
+        int ex = x + c;
+        int ey = y + (8-r);
+        if(ex >= 0 && ex < cfg.width && ey >= 0 && ey < cfg.length)
+          leds[getPix(ex, ey)] = CRGB(255, 0, 0);
+      }
+    }    
+  }
+}
+
+int fpsCnt = 0;
+int fpsRes = 0;
+int fpsSec = 0;
+
+void drawFPS(void)
+{
+  int s = millis() / 1000;
+  if(fpsSec != s)
+  {
+    fpsSec = s;
+    fpsRes = fpsCnt;
+    fpsCnt = 0;
+  }
+  else
+  {
+    fpsCnt++;
+  }
+
+  if(fpsRes < 1000)
+  {
+    drawChar(0, 6, fpsRes / 100 + '0');
+    drawChar(5, 6, (fpsRes % 100) / 10 + '0');
+    drawChar(10, 6, fpsRes % 10 + '0');
+  }
+  else
+  {
+    drawChar(0, 6, 'H');
+  }
+}
+
+void drawClock(void)
+{
+  int pos = 32 - ((millis() / 100) % (cfg.width*2 + 6*4));//Две ширины дисплея что бы буквы "выезжали" из-за края плюс ширина полного текста  
+  drawChar(pos, 6, (now.hour / 10) + '0');
+  drawChar(pos + 6, 6, (now.hour % 10) + '0');
+  drawChar(pos + 13, 6, (now.min / 10) + '0');
+  drawChar(pos + 19, 6, (now.min % 10) + '0');
+}
+
+void drawOverlay(void)
+{ 
+  drawClock();
+
+  // выводим нажатия кнопки
+  if (btnClicks > 0) fill_solid(leds, btnClicks, CRGB::White);
+  if (brTicks > 0) fill_solid(leds, brTicks, CRGB::Cyan);
 }
 
 byte getBright() {

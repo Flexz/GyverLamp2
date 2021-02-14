@@ -38,6 +38,8 @@ const char WiFiPassword[] = "12345678";
 #define NTP_UPD_PRD 5       // период обновления времени с NTP сервера, минут
 
 // ---------- БИБЛИОТЕКИ -----------
+#include "platforms.h"    // Porting, must be first include
+
 #include "data.h"         // данные
 #include "Time.h"         // часы
 #include "TimeRandom.h"   // случайные числа по времени
@@ -51,8 +53,6 @@ const char WiFiPassword[] = "12345678";
 #include <FastLED.h>      // лента
 #include <WiFiUdp.h>      // общение по UDP
 #include <EEPROM.h>       // епром
-
-#include "platforms.h"
 
 // ------------------- ДАТА --------------------
 Config cfg;
