@@ -175,7 +175,7 @@ uint8_t getFontIndex(uint8_t asciiCode)
   return 0;
 }
 
-void drawChar(int x, int y, char sym)
+void drawChar(int x, int y, char sym, CRGB color, float blendFactor)
 {
   const uint8_t *syms = fontHEX[getFontIndex(sym)];
   for(int c = 0; c < 5; c++)
@@ -187,7 +187,7 @@ void drawChar(int x, int y, char sym)
         int ex = x + c;
         int ey = y + (8-r);
         if(ex >= 0 && ex < cfg.width && ey >= 0 && ey < cfg.length)
-          leds[getPix(ex, ey)] = CRGB(255, 0, 0);
+          leds[getPix(ex, ey)] = leds[getPix(ex, ey)].lerp8(color, blendFactor * 255);
       }
     }    
   }
@@ -213,23 +213,33 @@ void drawFPS(void)
 
   if(fpsRes < 1000)
   {
-    drawChar(0, 6, fpsRes / 100 + '0');
-    drawChar(5, 6, (fpsRes % 100) / 10 + '0');
-    drawChar(10, 6, fpsRes % 10 + '0');
+    drawChar(0, 6, fpsRes / 100 + '0', CRGB(255, 0, 0), 1.0);
+    drawChar(5, 6, (fpsRes % 100) / 10 + '0', CRGB(255, 0, 0), 1.0);
+    drawChar(10, 6, fpsRes % 10 + '0', CRGB(255, 0, 0), 1.0);
   }
   else
   {
-    drawChar(0, 6, 'H');
+    drawChar(0, 6, 'H', CRGB(255, 0, 0), 1.0);
   }
 }
 
 void drawClock(void)
 {
+  CRGB color = CRGB(255, 0, 0);
+  float blend = 0.6;
   int pos = 32 - ((millis() / 100) % (cfg.width*2 + 6*4));//Две ширины дисплея что бы буквы "выезжали" из-за края плюс ширина полного текста  
-  drawChar(pos, 6, (now.hour / 10) + '0');
-  drawChar(pos + 6, 6, (now.hour % 10) + '0');
-  drawChar(pos + 13, 6, (now.min / 10) + '0');
-  drawChar(pos + 19, 6, (now.min % 10) + '0');
+
+  drawChar(pos + 1, 6, (now.hour / 10) + '0', color, blend);
+  drawChar(pos, 6, (now.hour / 10) + '0', color, 0.9);
+
+  drawChar(pos + 7, 6, (now.hour % 10) + '0', color, blend);
+  drawChar(pos + 6, 6, (now.hour % 10) + '0', color, 0.9);
+
+  drawChar(pos + 14, 6, (now.min / 10) + '0', color, blend);
+  drawChar(pos + 13, 6, (now.min / 10) + '0', color, 0.9);
+
+  drawChar(pos + 20, 6, (now.min % 10) + '0', color, blend);
+  drawChar(pos + 19, 6, (now.min % 10) + '0', color, 0.9);
 }
 
 void drawOverlay(void)
