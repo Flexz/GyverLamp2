@@ -1,3 +1,6 @@
+#ifndef __TIME_H
+#define __TIME_H
+
 class Time {
   public:
     byte sec = 0;
@@ -56,3 +59,5 @@ class Time {
     byte prevSec = 0;
     byte prevMin = 0;
 };
+
+#endif //__TIME_H

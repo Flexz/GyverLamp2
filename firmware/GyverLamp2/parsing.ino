@@ -60,7 +60,7 @@ void parsing() {
               char OTA[60];
               strcpy(OTA, OTAhost);
               strcpy(OTA + strlen(OTAhost), OTAfile[data[3]]);
-              ESPhttpUpdate.update(OTA);
+              //ESPhttpUpdate.update(OTA);
             } break;
           case 13:                                        // выключить через
             if (data[3] == 0) turnoffTmr.stop();
