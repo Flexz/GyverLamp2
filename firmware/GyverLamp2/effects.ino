@@ -1,3 +1,5 @@
+#include "font.h"
+
 void effectsRoutine() {
   static timerMillis effTmr(20, true);
   static byte prevEff = 255;
@@ -155,44 +157,6 @@ void effectsRoutine() {
   }
 }
 
-uint8_t getFontIndex(uint8_t asciiCode)
-{
-  asciiCode = asciiCode - '0' + 16;                         // перевод код символа из таблицы ASCII в номер согласно нумерации массива
-
-  if (asciiCode <= 90)                                      // печатаемые символы и английские буквы
-  {
-    return asciiCode;
-  }
-  else if (asciiCode >= 112 && asciiCode <= 159)
-  {
-    return asciiCode - 17;
-  }
-  else if (asciiCode >= 96 && asciiCode <= 111)
-  {
-    return asciiCode + 47;
-  }
-
-  return 0;
-}
-
-void drawChar(int x, int y, char sym, CRGB color, float blendFactor)
-{
-  const uint8_t *syms = fontHEX[getFontIndex(sym)];
-  for(int c = 0; c < 5; c++)
-  {
-    for(int r = 0; r < 8; r++)
-    {
-      if(syms[c] & (1 << r))
-      {
-        int ex = x + c;
-        int ey = y + (8-r);
-        if(ex >= 0 && ex < cfg.width && ey >= 0 && ey < cfg.length)
-          leds[getPix(ex, ey)] = leds[getPix(ex, ey)].lerp8(color, blendFactor * 255);
-      }
-    }    
-  }
-}
-
 int fpsCnt = 0;
 int fpsRes = 0;
 int fpsSec = 0;
@@ -211,7 +175,7 @@ void drawFPS(void)
     fpsCnt++;
   }
 
-  if(fpsRes < 1000)
+  /*if(fpsRes < 1000)
   {
     drawChar(0, 6, fpsRes / 100 + '0', CRGB(255, 0, 0), 1.0);
     drawChar(5, 6, (fpsRes % 100) / 10 + '0', CRGB(255, 0, 0), 1.0);
@@ -220,26 +184,23 @@ void drawFPS(void)
   else
   {
     drawChar(0, 6, 'H', CRGB(255, 0, 0), 1.0);
-  }
+  }*/
 }
 
 void drawClock(void)
 {
+  Font6x8 font;
   CRGB color = CRGB(255, 0, 0);
-  float blend = 0.6;
+  float blend = 1.0;
   int pos = 32 - ((millis() / 100) % (cfg.width*2 + 6*4));//Две ширины дисплея что бы буквы "выезжали" из-за края плюс ширина полного текста  
 
-  drawChar(pos + 1, 6, (now.hour / 10) + '0', color, blend);
-  drawChar(pos, 6, (now.hour / 10) + '0', color, 0.9);
+  font.DrawChar(pos + 1, 6, (now.hour / 10) + '0', color, blend);  
 
-  drawChar(pos + 7, 6, (now.hour % 10) + '0', color, blend);
-  drawChar(pos + 6, 6, (now.hour % 10) + '0', color, 0.9);
+  font.DrawChar(pos + font.Width(), 6, (now.hour % 10) + '0', color, blend);  
 
-  drawChar(pos + 14, 6, (now.min / 10) + '0', color, blend);
-  drawChar(pos + 13, 6, (now.min / 10) + '0', color, 0.9);
+  font.DrawChar(pos + font.Width()*2+1, 6, (now.min / 10) + '0', color, blend);  
 
-  drawChar(pos + 20, 6, (now.min % 10) + '0', color, blend);
-  drawChar(pos + 19, 6, (now.min % 10) + '0', color, 0.9);
+  font.DrawChar(pos + font.Width()*3+1, 6, (now.min % 10) + '0', color, blend);  
 }
 
 void drawOverlay(void)
