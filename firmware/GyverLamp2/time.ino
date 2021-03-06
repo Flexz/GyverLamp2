@@ -1,99 +1,83 @@
 void setupTime() {
-  ntp.setUpdateInterval(NTP_UPD_PRD / 2 * 60000ul);   // меньше в два раза, ибо апдейт вручную
+  ntp.setUpdateInterval(NTP_UPD_PRD * 60000ul);
   ntp.setTimeOffset((cfg.GMT - 13) * 3600);
-  ntp.setPoolServerName(NTPservers[cfg.NTP - 1]);
-  if (cfg.WiFimode) {
-    // если подключены - запрашиваем время с сервера
+  ntp.setPoolServerName(NTPserver);
+  if (cfg.WiFimode && !connTmr.running()) {     // если успешно подключились к WiFi
     ntp.begin();
-    if (ntp.update() && !gotNTP) gotNTP = true;
+    if (ntp.update()) gotNTP = true;
   }
 }
 
-// сохраняет счёт времени после обрыва связи
+// основной тикер времени
 void timeTicker() {
-  static timerMillis tmr(10, true);
+  static timerMillis tmr(30, true);
   if (tmr.isReady()) {
-    updateTime();                               // обновляем время
-    sendTimeToSlaves();                         // отправляем время слейвам
-    trnd.update(now.hour, now.min, now.sec);    // обновляем рандомайзер
-    if (gotNTP) checkWorkTime();                // проверяем расписание, если подключены к Интернет
-    checkTurnoff();                             // проверяем таймер отключения
-  }
-}
-
-void updateTime() {
-  if (cfg.WiFimode && WiFi.status() == WL_CONNECTED) {  // если вайфай подключен
-    now.sec = ntp.getSeconds();
-    now.min = ntp.getMinutes();
-    now.hour = ntp.getHours();
-    now.day = ntp.getDay();
-    now.day = (now.day == 0) ? 6 : (now.day - 1);   // перевод из вс0 в пн0
-    now.weekMs = now.getWeekS() * 1000ul + ntp.getMillis();
-    now.setMs(ntp.getMillis());
-    if (now.min % NTP_UPD_PRD == 0 && now.sec == 0) {
-      // берём время с интернета каждую NTP_UPD_PRD минуту, ставим флаг что данные с NTP получены, значит мы онлайн
-      if (ntp.update() && !gotNTP) gotNTP = true;
+    if (cfg.WiFimode && WiFi.status() == WL_CONNECTED && !connTmr.running()) {  // если вайфай подключен и это не попытка переподключиться
+      now.sec = ntp.getSeconds();
+      now.min = ntp.getMinutes();
+      now.hour = ntp.getHours();
+      now.day = ntp.getDay();   // вс 0, сб 6
+      now.weekMs = now.getWeekS() * 1000ul + ntp.getMillis();
+      now.setMs(ntp.getMillis());
+      if (ntp.update()) gotNTP = true;
+    } else {          // если вайфай не подключен
+      now.tick();     // тикаем своим счётчиком
     }
-  } else {          // если нет
-    now.tick();     // тикаем своим счётчиком
-  }
-}
 
-void sendTimeToSlaves() {
-  if (!cfg.WiFimode) {              // если мы AP
     static byte prevSec = 0;
-    if (prevSec != now.sec) {       // новая секунда
+    if (prevSec != now.sec) {                   // новая секунда
       prevSec = now.sec;
-      if (now.min % 1 == 0 && now.sec == 0) sendTime(); // ровно каждые 5 мин отправляем время
+      trnd.update(now.hour, now.min, now.sec);  // обновляем рандомайзер
+
+      if (now.sec == 0) {                       // новая минута
+        if (now.min % 5 == 0) sendTimeToLocals();  // отправляем время каждые 5 мин
+        if (gotNTP || gotTime) {                // если знаем точное время
+          checkWorkTime();                      // проверяем расписание
+          checkDawn();                          // и рассвет
+        }
+      }
     }
   }
 }
 
-void checkTurnoff() {
-  if (turnoffTmr.isReady()) {
-    turnoffTmr.stop();
-    setPower(0);
+void sendTimeToLocals() {
+  if (!cfg.WiFimode) sendUDP(6, now.day, now.hour, now.min);   // мы - АР
+}
+
+// установка времени с мобилы
+void setTime(byte day, byte hour, byte min, byte sec) {
+  if (!cfg.WiFimode || !gotNTP) {  // если мы AP или не получили NTP
+    now.day = day;
+    now.hour = hour;
+    now.min = min;
+    now.sec = sec;
+    now.setMs(0);
+    gotTime = true;
+  }
+}
+
+void checkDawn() {
+  if (dawn.state[now.day] && !dawnTmr.running()) {    // рассвет включен но не запущен
+    int dawnMinute = dawn.hour[now.day] * 60 + dawn.minute[now.day] - dawn.time;
+    if (dawnMinute < 0) dawnMinute += 1440;
+    if (dawnMinute == now.hour * 60 + now.min) {
+      DEBUG("dawn start ");
+      DEBUGLN(dawn.time * 60000ul);
+      dawnTmr.setInterval(dawn.time * 60000ul);
+      dawnTmr.restart();
+      FastLED.setBrightness(255);
+    }
   }
 }
 
 void checkWorkTime() {
-  if (!isWorkTime(now.hour, cfg.workFrom, cfg.workTo)) {
-    if (cfg.state) {
-      cfg.state = false;
-      FastLED.clear();
-      FastLED.show();
-    }
-  } else {
-    if (!cfg.state && !cfg.manualOff) {
-      cfg.state = true;
-    }
+  static byte prevState = 2;  // для первого запуска
+  byte curState = isWorkTime(now.hour, cfg.workFrom, cfg.workTo);
+  if (prevState != curState) {    // переключение расписания
+    prevState = curState;
+    if (curState && !cfg.state && !cfg.manualOff) fade(1);  // нужно включить, а лампа выключена и не выключалась вручную
+    if (!curState && cfg.state) fade(0);                    // нужно выключить, а лампа включена
   }
-}
-
-void sendTime() {
-  IPAddress ip = WiFi.localIP();
-  ip[3] = 255;
-  char reply[20] = GL_KEY;
-  byte keylen = strlen(GL_KEY);
-  reply[keylen++] = ',';
-  reply[keylen++] = 0 + '0';
-  reply[keylen++] = ',';
-  char hours[4];
-  itoa(now.hour, hours, DEC);
-  strncpy(reply + keylen, hours, 3);
-  keylen += strlen(hours);
-  reply[keylen++] = ',';
-  char mins[4];
-  itoa(now.min, mins, DEC);
-  strncpy(reply + keylen, mins, 3);
-  keylen += strlen(mins);
-  reply[keylen++] = NULL;
-
-  DEBUG("Sending time: ");
-  DEBUGLN(reply);
-  Udp.beginPacket(ip, 8888);
-  Udp.write(reply);
-  Udp.endPacket();
 }
 
 bool isWorkTime(byte t, byte from, byte to) {

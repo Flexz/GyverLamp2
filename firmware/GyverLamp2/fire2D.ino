@@ -27,10 +27,15 @@ const unsigned char hueMask[11][16] PROGMEM = {
 
 byte fireLine[100];
 
-void fireRoutine() {
-  shiftUp();
-  FOR_i(0, cfg.width) fireLine[i] = random(64, 255);
-  drawFrame(30);
+void fireRoutine(byte speed) {
+  static byte count = 0;
+  if (count >= 100) {
+    shiftUp();
+    FOR_i(0, cfg.width) fireLine[i] = random(64, 255);
+    count = 0;
+  }
+  drawFrame(count);
+  count += speed;
 }
 
 void shiftUp() {
@@ -67,6 +72,14 @@ void drawFrame(int pcnt) {
                                255, // S
                                (uint8_t)max(0, nextv) // V
                              );
+      } else if (y == 11) {
+        if (random8(0, 20) == 0 && getPixColor(x, y - 1) != 0) setPix(x, y, getPixColor(x, y - 1));
+        else setPix(x, y, 0);
+      } else {
+        // старая версия для яркости
+        if (getPixColor(x, y - 1) > 0)
+          setPix(x, y, getPixColor(x, y - 1));
+        else setPix(x, y, 0);
       }
     }
   }

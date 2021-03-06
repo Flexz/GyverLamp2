@@ -6,13 +6,13 @@ class Time {
     byte sec = 0;
     byte min = 0;
     byte hour = 0;
-    byte day = 0;   // пн 0, вт 2.. вс 6
+    byte day = 0;
     int ms = 0;
     uint32_t weekMs = 0;
     uint32_t weekS = 0;
 
     int getMs() {
-      return (millis() - tmr);
+      return (tmr - millis());
     }
     void setMs(int ms) {
       tmr = millis() + ms;

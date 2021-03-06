@@ -9,6 +9,7 @@
 
 // ------------- АЦП --------------
 #define USE_ADC 0           // можно выпилить АЦП
+#define USE_CLAP 1          // два хлопка в ладоши вкл выкл лампу
 #define MIC_VCC D3          // питание микрофона
 #define PHOT_VCC D2         // питание фоторезистора
 
@@ -31,8 +32,8 @@ const char AP_NameChar[] = "GyverLamp2";
 const char WiFiPassword[] = "12345678";
 
 // ------------ Прочее -------------
-#define GL_VERSION 010
+#define GL_VERSION 21
 #define EE_TOUT 30000       // таймаут сохранения епром после изменения, мс
 #define DEBUG_SERIAL        // закомментируй чтобы выключить отладку (скорость 115200)
-#define EE_KEY 44           // ключ сброса WiFi (измени для сброса всех настроек)
+#define EE_KEY 55           // ключ сброса WiFi (измени для сброса всех настроек)
 #define NTP_UPD_PRD 5       // период обновления времени с NTP сервера, минут
